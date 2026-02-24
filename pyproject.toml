@@ -1,6 +1,6 @@
 [project]
 name = "DisneyPlusExport2YamtrackImport"
-version = "1.0.0"
+version = "1.1.0"
 description = "Convert Disney Plus GDPR Watchlist Export into Yamtrack CSV format."
 readme = "README.md"
 requires-python = ">=3.13"
