@@ -150,9 +150,9 @@ def process_disney_data():
                         }
                     )
                 else:
-                    logging.error(f"Didn't find episode '{program_title}' of season '{season_title}' on TMDB.")
+                    logging.error(f"Didn't find episode '{program_title}' of season '{season_title}' on TMDB. Watched on: {date_str}. Please check manually.")
             else:
-                logging.error(f"Didn't find series '{season_title}' on TMDB.")
+                logging.error(f"Didn't find series '{season_title}' on TMDB. Watches on {date_str}. Please check manually.")
 
         # case 3: movie (program_title existing season_title missing)
         elif program_title and not season_title:
@@ -168,7 +168,7 @@ def process_disney_data():
                     }
                 )
             else:
-                logging.error(f"Didn't find movie '{program_title}' on TMDB.")
+                logging.error(f"Didn't find movie '{program_title}' on TMDB. Watched on {date_str}. Please check manually.")
 
         # Rate Limiting für API
         time.sleep(0.1)
