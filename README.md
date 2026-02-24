@@ -1,4 +1,4 @@
-# DisneyPlusExport2YamTrackImport
+# DisneyPlusExport2YamtrackImport
 Bridge the gap between your Disney+ binge-watching sessions and your [**Yamtrack**](https://github.com/FuzzyGrim/Yamtrack) profile. This Python script takes your Disney+ data export, matches it against **The Movie Database (TMDB)**, and generates a pixel-perfect CSV file ready for bulk import.
 
 
