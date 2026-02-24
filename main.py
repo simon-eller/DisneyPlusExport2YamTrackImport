@@ -62,12 +62,14 @@ class TMDBClient:
 
 def process_disney_data():
     try:
+        # Open input file
         df = pandas.read_csv(INPUT_FILE, sep=";")
+
     except FileNotFoundError:
         print(f"Error: file {INPUT_FILE} not found.")
         return
 
-    # Convert date into datetime format
+    # Convert column Date into datetime format
     df["Date"] = pandas.to_datetime(df["Date"])
 
     # Sort entries by date
@@ -76,36 +78,37 @@ def process_disney_data():
     # Deduplication: keep only last line
     df = df.drop_duplicates(subset=["Program Title", "Season Title"], keep="last")
 
-    # Convert date back to string
+    # Convert Date back to string
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
 
-    yamtrack_rows = []
-    processed_tv_shows = set() # To create season entries only once
-    processed_seasons = set()
+    yamtrack_rows:list = []
+    processed_tv_shows:set = set() # To create tv show entries only once
+    processed_seasons:set = set() # To create season entries only once
 
     tmdb = TMDBClient(api_token=TMDB_API_READ_ACCESS_TOKEN)
 
-    for index, row in df.iterrows():
-        prog_title = str(row["Program Title"]) if pandas.notna(row["Program Title"]) else ""
-        seas_title = str(row["Season Title"]) if pandas.notna(row["Season Title"]) else ""
-        date_str = str(row["Date"])
+    for row in df.iterrows():
+        # Get properties of current row
+        program_title = str(row["Program Title"]).strip() if pandas.notna(row["Program Title"]) else ""
+        season_title = str(row["Season Title"]).strip() if pandas.notna(row["Season Title"]) else ""
+        date_str = str(row["Date"]).strip()
 
         # set timestamp to 14:14 mez
         end_date = f"{date_str} 14:14:00+01:00"
 
-        # case 1: error (season without episode title)
-        if not prog_title and seas_title:
-            logging.warning(f"Skipped (missing episode title): {seas_title} on {date_str}. Please check manually.")
+        # case 1: error (season_title existing episode_title missing)
+        if not program_title and season_title:
+            logging.warning(f"Skipped (missing episode title): {season_title} on {date_str}. Please check manually.")
             continue
 
-        # case 2: season (season and episode title)
-        elif prog_title and seas_title:
-            show_info = tmdb.search_tv_show(seas_title)
+        # case 2: series (season_title and episode_title existing)
+        elif program_title and season_title:
+            show_info = tmdb.search_tv_show(season_title)
             if show_info:
                 tv_id = show_info["id"]
-                s_num, e_num = tmdb.get_episode_info(tv_id, prog_title)
+                season_number, episode_number = tmdb.get_episode_info(tv_id, program_title)
 
-                if s_num is not None:
+                if season_number is not None:
                     # TV entry (once per series)
                     if tv_id not in processed_tv_shows:
                         yamtrack_rows.append(
@@ -120,14 +123,14 @@ def process_disney_data():
                         processed_tv_shows.add(tv_id)
 
                     # Season entry (once per season)
-                    season_key = f"{tv_id}_{s_num}"
+                    season_key = f"{tv_id}_{season_number}"
                     if season_key not in processed_seasons:
                         yamtrack_rows.append(
                             {
                                 "media_id": tv_id,
                                 "source": "tmdb",
                                 "media_type": "season",
-                                "season_number": s_num,
+                                "season_number": season_number,
                                 "status": "In progress",
                                 "end_date": "",
                             }
@@ -140,20 +143,20 @@ def process_disney_data():
                             "media_id": tv_id,
                             "source": "tmdb",
                             "media_type": "episode",
-                            "season_number": s_num,
-                            "episode_number": e_num,
+                            "season_number": season_number,
+                            "episode_number": episode_number,
                             "status": "Completed",
                             "end_date": end_date,
                         }
                     )
                 else:
-                    logging.error(f"Didn't find episode '{prog_title}' of season '{seas_title}' on TMDB.")
+                    logging.error(f"Didn't find episode '{program_title}' of season '{season_title}' on TMDB.")
             else:
-                logging.error(f"Didn't find series '{seas_title}' on TMDB.")
+                logging.error(f"Didn't find series '{season_title}' on TMDB.")
 
-        # case 3: film (only program title filled)
-        elif prog_title and not seas_title:
-            movie_info = tmdb.search_movie(prog_title)
+        # case 3: movie (program_title existing season_title missing)
+        elif program_title and not season_title:
+            movie_info = tmdb.search_movie(program_title)
             if movie_info:
                 yamtrack_rows.append(
                     {
@@ -165,7 +168,7 @@ def process_disney_data():
                     }
                 )
             else:
-                logging.error(f"Didn't find movie '{prog_title}' on TMDB.")
+                logging.error(f"Didn't find movie '{program_title}' on TMDB.")
 
         # Rate Limiting für API
         time.sleep(0.1)
