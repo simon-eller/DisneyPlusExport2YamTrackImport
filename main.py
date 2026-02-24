@@ -23,6 +23,7 @@ class TMDBClient:
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json;charset=utf-8"
         }
+        self._show_cache:dict = {}
 
     def search_movie(self, title):
         url:str = f"{self._base_url}/search/movie"
@@ -39,20 +40,25 @@ class TMDBClient:
         return results[0] if results else None
 
     def get_episode_info(self, tv_id, episode_title):
-        show_url = f"{self._base_url}/tv/{tv_id}"
-        show_data = requests.get(show_url, headers=self._headers).json()
+        if tv_id not in self._show_cache:
+            show_url = f"{self._base_url}/tv/{tv_id}"
+            show_data = requests.get(show_url, headers=self._headers).json()
 
-        # Iterate through seasons to find episode
-        for season in show_data.get("seasons", []):
-            season_number = season["season_number"]
-            season_url = f"{self._base_url}/tv/{tv_id}/season/{season_number}"
-            season_data = requests.get(season_url, headers=self._headers).json()
+            all_episodes:dict = {}
 
-            for ep in season_data.get("episodes", []):
-                # Comparison of titles
-                if ep["name"].lower() == episode_title.lower():
-                    return season_number, ep["episode_number"]
-        return None, None
+            # Iterate through seasons to find episode
+            for season in show_data.get("seasons", []):
+                season_number = season["season_number"]
+                season_url = f"{self._base_url}/tv/{tv_id}/season/{season_number}"
+                season_data = requests.get(season_url, headers=self._headers).json()
+
+                for episode in season_data.get("episodes", []):
+                    all_episodes[episode["name"].lower().strip()] = (season_number, episode["episode_number"])
+
+            self._show_cache[tv_id] = all_episodes
+
+        # Search in cache
+        return self._show_cache[tv_id].get(episode_title.lower().strip(), (None, None))
 
 def process_disney_data():
     try:
@@ -102,27 +108,44 @@ def process_disney_data():
                 if s_num is not None:
                     # TV entry (once per series)
                     if tv_id not in processed_tv_shows:
-                        yamtrack_rows.append({
-                            "media_id": tv_id, "source": "tmdb", "media_type": "tv",
-                            "status": "In progress", "end_date": ""
-                        })
+                        yamtrack_rows.append(
+                            {
+                                "media_id": tv_id,
+                                "source": "tmdb",
+                                "media_type": "tv",
+                                "status": "In progress",
+                                "end_date": "",
+                            }
+                        )
                         processed_tv_shows.add(tv_id)
 
                     # Season entry (once per season)
                     season_key = f"{tv_id}_{s_num}"
                     if season_key not in processed_seasons:
-                        yamtrack_rows.append({
-                            "media_id": tv_id, "source": "tmdb", "media_type": "season",
-                            "season_number": s_num, "status": "In progress", "end_date": ""
-                        })
+                        yamtrack_rows.append(
+                            {
+                                "media_id": tv_id,
+                                "source": "tmdb",
+                                "media_type": "season",
+                                "season_number": s_num,
+                                "status": "In progress",
+                                "end_date": "",
+                            }
+                        )
                         processed_seasons.add(season_key)
 
                     # Episode entry (once per episode)
-                    yamtrack_rows.append({
-                        "media_id": tv_id, "source": "tmdb", "media_type": "episode",
-                        "season_number": s_num, "episode_number": e_num,
-                        "status": "Completed", "end_date": end_date
-                    })
+                    yamtrack_rows.append(
+                        {
+                            "media_id": tv_id,
+                            "source": "tmdb",
+                            "media_type": "episode",
+                            "season_number": s_num,
+                            "episode_number": e_num,
+                            "status": "Completed",
+                            "end_date": end_date,
+                        }
+                    )
                 else:
                     logging.error(f"Didn't find episode '{prog_title}' of season '{seas_title}' on TMDB.")
             else:
@@ -132,10 +155,15 @@ def process_disney_data():
         elif prog_title and not seas_title:
             movie_info = tmdb.search_movie(prog_title)
             if movie_info:
-                yamtrack_rows.append({
-                    "media_id": movie_info['id'], "source": "tmdb", "media_type": "movie",
-                    "status": "Completed", "end_date": end_date
-                })
+                yamtrack_rows.append(
+                    {
+                        "media_id": movie_info["id"],
+                        "source": "tmdb",
+                        "media_type": "movie",
+                        "status": "Completed",
+                        "end_date": end_date,
+                    }
+                )
             else:
                 logging.error(f"Didn't find movie '{prog_title}' on TMDB.")
 
@@ -159,6 +187,7 @@ def process_disney_data():
 
     output_df[columns].to_csv(OUTPUT_FILE, index=False, quoting=1)
     print(f"Done! Import file '{OUTPUT_FILE}' was created. See errors at '{LOG_FILE}'.")
+
 
 if __name__ == "__main__":
     process_disney_data()
