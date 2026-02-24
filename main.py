@@ -87,7 +87,7 @@ def process_disney_data():
 
     tmdb = TMDBClient(api_token=TMDB_API_READ_ACCESS_TOKEN)
 
-    for row in df.iterrows():
+    for index, row in df.iterrows():
         # Get properties of current row
         program_title = str(row["Program Title"]).strip() if pandas.notna(row["Program Title"]) else ""
         season_title = str(row["Season Title"]).strip() if pandas.notna(row["Season Title"]) else ""
