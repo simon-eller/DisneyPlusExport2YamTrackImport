@@ -1,5 +1,5 @@
 # DisneyPlusExport2YamtrackImport
-Bridge the gap between your Disney+ binge-watching sessions and your [**Yamtrack**](https://github.com/FuzzyGrim/Yamtrack) profile. This Python script takes your Disney+ data export, matches it against **The Movie Database (TMDB)**, and generates a pixel-perfect CSV file ready for bulk import.
+Bridge the gap between your Disney+ binge-watching sessions and your [**Yamtrack**](https://github.com/FuzzyGrim/Yamtrack) profile. This Python script takes your Disney+ extended watch history export file, matches it against **The Movie Database (TMDB)**, and generates a pixel-perfect CSV file ready for bulk import.
 
 
 ## ✨ Features
@@ -10,20 +10,18 @@ Bridge the gap between your Disney+ binge-watching sessions and your [**Yamtrack
 
 
 ## 🛠 Prerequisites
-
 1. **Python 3.13+**
 2. **TMDB API Key:** You’ll need a *Read Access Token*.
 
 
 ## 🚀 Setup & Usage
-
 ### 1. Prepare your Data
-Convert the Disney+ export file from PDF to CSV. Place your Disney+ data export file in the script directory and rename it to `disney_plus_export.csv` (or update the filename in the script). Ensure it uses a semicolon (`;`) as a separator.
+Convert the Disney+ extended watch history export file from PDF to CSV. Place your Disney+ extended watch history export file in the script directory and rename it to `disney_plus_export.csv` (or update the filename in the script). Ensure it uses a semicolon (`;`) as a separator.
 
 The contents of the file `disney_plus_export.csv` should look like this:
 ```csv
-Profile ID;Program Title;Season Title;Date
-my profile;Bluff;Prison Break;2026-01-01
+Profile ID;Program Title;Season Title;Create Date;Create Time;End Date;End Time
+my profile;Bluff;Prison Break;01/01/2026/15:00:00;01/01/2026;16:00:00
 ```
 
 ### 2. Configure Environment
