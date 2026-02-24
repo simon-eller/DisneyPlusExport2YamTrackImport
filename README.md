@@ -20,6 +20,12 @@ Bridge the gap between your Disney+ binge-watching sessions and your **Yamtrack*
 ### 1. Prepare your Data
 Convert the Disney+ export file from PDF to CSV. Place your Disney+ data export file in the script directory and rename it to `disney_plus_export.csv` (or update the filename in the script). Ensure it uses a semicolon (`;`) as a separator.
 
+The contents of the file `disney_plus_export.csv` should look like this:
+```csv
+Profile ID;Program Title;Season Title;Date
+my profile;Bluff;Prison Break;2026-01-01
+```
+
 ### 2. Configure Environment
 Create a `.env` file in the root folder:
 
